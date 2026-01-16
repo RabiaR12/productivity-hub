@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SIM Ticketing — Old/New Comparison (Live Typing)</title>
+
+  <style>
+    :root{
+      --bg:#f1f2f4;
+      --surface:#ffffff;
+      --muted:#6b7280;
+      --text:#0f172a;
+      --border:#e5e7eb;
+      --brand:#6f5bd3;
+      --brand-2:#5b49c2;
+      --success:#16a34a;
+      --ink:#111827;
+      --radius:14px;
+      --shadow:0 6px 16px rgba(0,0,0,.08);
+      --focus:#60a5fa;
+      --hl-added:#d1fae5;   /* green */
+      --hl-updated:#fef9c3; /* yellow */
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    /* Header image */
+    .main-header{ border-bottom:1px solid #ddd; background:#fff; }
+    .main-header img{ width:100%; height:60px; object-fit:cover; display:block; }
+
+    /* Subheader */
+    .subheader{ background:#fafafa; border-bottom:1px solid var(--border); box-shadow:0 1px 0 rgba(0,0,0,.02); }
+    .subheader-inner{
+      max-width:1200px; margin:0 auto; padding:10px 16px;
+      display:flex; align-items:center; gap:12px;
+    }
+    .subheader-title{ font-weight:700; letter-spacing:.2px; }
+    .subheader-spacer{ flex:1; }
+    .subheader a{ color:#2a6fd6; text-decoration:none; font-size:14px; padding:6px 8px; border-radius:8px; }
+    .subheader a:hover{ background:#eef4ff; }
+
+    /* Layout */
+    .layout{ display:flex; min-height:calc(100vh - 90px - 44px); }
+    .sidebar{
+      width:240px; background:#fff; border-right:1px solid var(--border);
+      padding:16px 14px;
+    }
+    .sidebar-title{ font-size:18px; font-weight:700; margin-bottom:12px; }
+    .sidebar-nav{ display:grid; gap:6px; }
+    .sidebar-nav a, .sidebar-nav summary{
+      display:block; font-size:14px; color:#333; padding:8px 10px;
+      border-radius:8px; text-decoration:none; cursor:pointer;
+    }
+    .sidebar-nav a:hover, .sidebar-nav summary:hover{ background:#f2f2f2; }
+    .sidebar-nav .current{ background:#f6f6f6; font-weight:600; }
+
+    .page{ flex:1; max-width:1200px; margin:0 auto; padding:18px 16px 96px; }
+    .crumbs{ font-size:13px; color:var(--muted); margin:6px 0 10px; }
+    .crumbs a{ color:#2a6fd6; text-decoration:none; }
+
+    .title-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+    h1{ font-size:22px; margin:0; }
+
+    .toolbar{ display:flex; gap:8px; flex-wrap:wrap; }
+    .btn{
+      font-size:14px; border-radius:10px; border:1px solid var(--border);
+      background:#fff; padding:8px 12px; cursor:pointer; color:var(--ink);
+    }
+
+    /* Panels */
+    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+    .panel{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .panel header{
+      background:#f8fafc; border-bottom:1px solid var(--border);
+      padding:12px 16px; display:flex; align-items:center; gap:10px;
+    }
+    .panel header .emoji{ font-size:18px; }
+    .panel header h2{ font-size:16px; margin:0; flex:1; }
+    .panel header .panel-tools{ display:flex; gap:8px; }
+
+    .chip{
+      display:inline-flex; align-items:center; gap:6px;
+      font-size:12px; padding:2px 8px; border-radius:999px;
+      background:#eef2ff; color:#3730a3; border:1px solid #c7d2fe;
+      white-space:nowrap;
+    }
+    .chip-soft{
+      background:#f3f4f6; color:#374151; border:1px solid #e5e7eb;
+    }
+
+    .edit-toggle{
+      font-size:12px; padding:6px 10px; border-radius:999px;
+      border:1px solid var(--border); background:#fff; cursor:pointer;
+    }
+    .edit-toggle[aria-pressed="true"]{
+      border-color:var(--focus); box-shadow:0 0 0 2px rgba(96,165,250,.25) inset;
+    }
+
+    .panel .body{
+      padding:16px 18px;
+      font-size:14px; line-height:1.7; color:#111827;
+      white-space:pre-wrap;
+      outline: none;
+      min-height:280px;
+    }
+    .panel .body[contenteditable="true"]{
+      background:#fff;
+      border:2px dashed var(--focus);
+      border-radius:12px;
+      padding:14px 16px;
+    }
+    .panel .body[contenteditable="true"]:focus{
+      box-shadow:0 0 0 3px rgba(96,165,250,.25);
+    }
+
+    /* typing caret */
+    .cursor{ display:inline-block; width:10px; background:#111827; height:1.05em;
+      transform:translateY(3px); margin-left:2px; animation:blink 1s steps(1,end) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* Highlights */
+    mark.hl-updated{ background:var(--hl-updated); padding:0 2px; border-radius:4px; }
+    mark.hl-added{ background:var(--hl-added); padding:0 2px; border-radius:4px; }
+
+    @media (max-width: 900px){ .grid{ grid-template-columns: 1fr; } }
+
+    /* Bottom bar */
+    .accept-bar{
+      position:fixed; left:0; right:0; bottom:0; z-index:20;
+      background:#ffffffd9; backdrop-filter: blur(6px);
+      border-top:1px solid var(--border);
+    }
+    .accept-inner{
+      max-width:1200px; margin:0 auto; padding:12px 16px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .accept-note{ font-size:13px; color:var(--muted); }
+    .accept-actions{ display:flex; gap:8px; }
+    .btn-success{
+      background:#10b981; color:#fff; border:none; padding:10px 16px; border-radius:999px;
+      font-weight:600; box-shadow:0 6px 14px rgba(16,185,129,.25); cursor:pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Header image -->
+  <header class="main-header">
+    <img src="header.png" alt="Header Image" class="header-image">
+  </header>
+
+  <!-- Subheader -->
+  <div class="subheader" role="navigation">
+    <div class="subheader-inner">
+      <div class="subheader-title">Old ↔ New Comparison</div>
+      <div class="subheader-spacer"></div>
+      <a href="aimagic.html" title="Back to AI Analysis">← Back to AI Analysis</a>
+    </div>
+  </div>
+
+  <!-- Layout -->
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" aria-label="Ticket queues">
+      <div class="sidebar-title">Ticket Queues</div>
+      <nav class="sidebar-nav">
+        <a class="nav-item" href="index.html">Home</a>
+        <details class="nav-group" open>
+          <summary>Open Tickets by resolver group</summary>
+        </details>
+        <a class="nav-item current" href="#">All my groups</a>
+      </nav>
+    </aside>
+
+    <!-- Page -->
+    <main class="page">
+      <div class="crumbs">
+        <a href="aimagic.html">AI Analysis</a> › Comparison › Knowledge Article
+      </div>
+
+      <div class="title-row">
+        <h1>Knowledge Article Comparison</h1>
+        <div class="toolbar">
+          <button id="copyNew" class="btn">Copy AI Article</button>
+        </div>
+      </div>
+
+      <section class="grid">
+        <!-- Left: Existing article -->
+        <article class="panel" aria-labelledby="leftTitle">
+          <header>
+            <span class="emoji">📝</span>
+            <h2 id="leftTitle">Knowledge Article 1: Current Version</h2>
+            <div class="panel-tools">
+              <button class="edit-toggle" id="editLeft" aria-pressed="false">Edit</button>
+            </div>
+          </header>
+          <div class="body" id="leftBody" spellcheck="false">
+Title: Resolving SQS Queue Latency in Lambda-Triggered Workflows
+
+Summary:
+  This article outlines the steps to diagnose and resolve latency issues in AWS SQS queues used to trigger Lambda functions in a data engineering pipeline.
+
+Issue Description:
+Users reported delays in message processing between SQS and Lambda, affecting downstream Spark jobs on EMR.
+Root Cause:
+The Lambda trigger was misconfigured with a low batch size and long visibility timeout, causing throttling and delayed execution.
+
+Resolution Steps:
+1. Navigate to the SQS queue in AWS Console.
+2. Increase the batch size to 10 and reduce the visibility timeout to 5 seconds.
+3. Update the Lambda concurrency settings to handle higher throughput.
+4. Monitor CloudWatch metrics for queue depth and Lambda duration.
+
+Tags: AWS, Lambda, SQS, EMR, Spark, Latency, Data Pipeline
+Author: Rabia Rashid
+Created On: 2025-09-29
+Last Updated: 2025-09-29
+          </div>
+        </article>
+
+        <!-- Right: AI panel (live typing + highlights) -->
+        <article class="panel" aria-labelledby="rightTitle">
+          <header>
+            <span class="emoji">🤖</span>
+            <h2 id="rightTitle">Knowledge Article 2: AI-Generated Version</h2>
+            <span class="chip" id="modelBadge">AI Generator</span>
+            <span class="chip chip-soft" id="genStatus" aria-live="polite">Generating…</span>
+            <div class="panel-tools">
+              <button class="edit-toggle" id="editRight" aria-pressed="false">Edit</button>
+            </div>
+          </header>
+          <div class="body" id="rightBody" aria-live="polite" aria-busy="true" spellcheck="false">
+            <span class="cursor" id="cursor"></span>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <!-- Bottom bar -->
+  <div class="accept-bar" role="contentinfo">
+    <div class="accept-inner">
+      <div class="accept-note" id="confNote">Confidence: 92% • 3 workflows auto-resolved • 0 manual escalations</div>
+      <div class="accept-actions">
+        <a href="aimagic.html" class="btn">Cancel</a>
+        <button class="btn-success" id="acceptBtn">Accept & Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ========= New AI text (your exact content) ========= */
+    const NEW_TEXT = `Title: Resolving SQS Queue Latency in Lambda-Triggered Workflows
+
+Summary:
+This article outlines the steps to diagnose and resolve latency issues in AWS SQS queues used to trigger Lambda functions in a data engineering pipeline.
+
+Issue Description:
+Users reported delays in message processing between SQS and Lambda, affecting downstream Spark jobs on EMR.
+
+Root Cause:
+The Lambda trigger was misconfigured with a low batch size and long visibility timeout, causing throttling and delayed execution.
+
+Resolution Steps:
+
+1. Navigate to the SQS queue in AWS Console.
+
+2. Increase the batch size to 10 and reduce the visibility timeout to 5 seconds.
+
+3. Update the Lambda concurrency settings to handle higher throughput.
+
+4. Monitor CloudWatch metrics for queue depth and Lambda duration.
+
+5. Verify that the Lambda function has the latest IAM role permissions to access SQS and CloudWatch logs.
+
+6. If latency persists, enable Enhanced Monitoring and review the “ApproximateAgeOfOldestMessage” metric.
+
+7. For large-scale pipelines, consider using Event Source Mapping with parallelization factor > 1 to improve performance.
+
+Tags: AWS, Lambda, SQS, EMR, Spark, Latency, Data Pipeline
+Author: AI-Generated Update
+Created On: 2025-09-29
+Last Updated: 2025-10-13`;
+
+    /* ========= Typing + highlight engine ========= */
+    const TYPING_MS = 12;
+
+    const leftBody  = document.getElementById('leftBody');
+    const rightBody = document.getElementById('rightBody');
+    const genStatus = document.getElementById('genStatus');
+    const copyBtn   = document.getElementById('copyNew');
+    const acceptBtn = document.getElementById('acceptBtn');
+    const editLeftBtn  = document.getElementById('editLeft');
+    const editRightBtn = document.getElementById('editRight');
+
+    const LS_LEFT_HTML = 'ka_left_html';
+
+    // Build label map (e.g., "Title:", "Summary:", "Root Cause:", etc.)
+    function buildLabelMap(text){
+      const map = new Map();
+      text.split(/\r?\n/).forEach(raw=>{
+        const line = raw.trim();
+        const m = /^([A-Za-z ]+):/.exec(line);
+        if(m){
+          map.set(m[1].trim().toLowerCase(), line);
+        }
+      });
+      return map;
+    }
+
+    // Extract numbered steps (e.g., "1. do X")
+    function extractStepMap(text){
+      const map = new Map();
+      text.split(/\r?\n/).forEach(raw=>{
+        const line = raw.trim();
+        const m = /^(\d+)\.\s*(.+)$/.exec(line);
+        if(m) map.set(m[1], line);
+      });
+      return map;
+    }
+
+    // Decide highlight class for a given new line
+    function computeHighlight(trimmed, leftLinesSet, leftLabelMap, leftStepsMap){
+      if(!trimmed) return ''; // blank line
+
+      // Numbered steps
+      const stepMatch = /^(\d+)\.\s*/.exec(trimmed);
+      if(stepMatch){
+        const stepNo = stepMatch[1];
+        if(leftStepsMap.has(stepNo)){
+          const leftLine = leftStepsMap.get(stepNo);
+          return (leftLine === trimmed) ? '' : 'hl-updated';
+        }else{
+          return 'hl-added';
+        }
+      }
+
+      // Labeled sections
+      const labelMatch = /^([A-Za-z ]+):/.exec(trimmed);
+      if(labelMatch){
+        const label = labelMatch[1].trim().toLowerCase();
+        if(leftLabelMap.has(label)){
+          const leftLine = leftLabelMap.get(label);
+          return (leftLine === trimmed) ? '' : 'hl-updated';
+        }else{
+          return 'hl-added';
+        }
+      }
+
+      // Plain lines: if not anywhere on the left, mark as added
+      return leftLinesSet.has(trimmed) ? '' : 'hl-added';
+    }
+
+    // Type characters into a node
+    async function typeInto(node, text){
+      for(const ch of text){
+        node.append(ch);
+        await new Promise(r=>setTimeout(r, TYPING_MS));
+      }
+    }
+
+    // Live type NEW_TEXT with highlights
+    async function typeNewWithHighlights(){
+      const leftText = leftBody.textContent;
+      const leftLinesSet = new Set(leftText.split(/\r?\n/).map(l=>l.trim()).filter(Boolean));
+      const leftLabelMap = buildLabelMap(leftText);
+      const leftStepsMap = extractStepMap(leftText);
+
+      rightBody.innerHTML = '';
+      genStatus.textContent = 'Generating…';
+      rightBody.setAttribute('aria-busy','true');
+
+      const lines = NEW_TEXT.split(/\r?\n/);
+
+      for(let i=0;i<lines.length;i++){
+        const rawLine = lines[i];
+        const trimmed = rawLine.trim();
+
+        // Container div per visual line
+        const lineWrap = document.createElement('div');
+
+        const hlClass = computeHighlight(trimmed, leftLinesSet, leftLabelMap, leftStepsMap);
+
+        let targetNode;
+        if(hlClass){
+          const mark = document.createElement('mark');
+          mark.className = hlClass;
+          lineWrap.appendChild(mark);
+          targetNode = mark;
+        }else{
+          targetNode = lineWrap;
+        }
+
+        // If the line is empty, just add a non-breaking space for spacing consistency
+        if(!rawLine.length){
+          targetNode.appendChild(document.createTextNode(' '));
+        }else{
+          await typeInto(targetNode, rawLine);
+        }
+
+        rightBody.appendChild(lineWrap);
+
+        // Small pause between lines to feel natural
+        await new Promise(r=>setTimeout(r, TYPING_MS*6));
+      }
+
+      rightBody.removeAttribute('aria-busy');
+      genStatus.textContent = 'Generated';
+    }
+
+    // Editable toggles
+    function setEditable(el, btn, on){
+      el.setAttribute('contenteditable', on ? 'true':'false');
+      btn.setAttribute('aria-pressed', on ? 'true':'false');
+      btn.textContent = on ? 'Done':'Edit';
+      if(on){ el.focus(); }
+    }
+    function autoSave(el, key){
+      el.addEventListener('input', () => {
+        if(el.getAttribute('contenteditable') === 'true'){
+          localStorage.setItem(key, el.innerHTML);
+        }
+      });
+    }
+
+    // INIT: restore left edits if any
+    const savedLeft = localStorage.getItem(LS_LEFT_HTML);
+    if(savedLeft) leftBody.innerHTML = savedLeft;
+
+    // Start live typing with highlights
+    typeNewWithHighlights();
+
+    // Wire buttons
+    editLeftBtn.addEventListener('click', () => {
+      const on = leftBody.getAttribute('contenteditable') === 'true';
+      setEditable(leftBody, editLeftBtn, !on);
+      if(on){ // turning off edit → persist and re-render right highlights live again
+        localStorage.setItem(LS_LEFT_HTML, leftBody.innerHTML);
+        rightBody.innerHTML = '<span class="cursor"></span>';
+        typeNewWithHighlights();
+      }
+    });
+    editRightBtn.addEventListener('click', () => {
+      const on = rightBody.getAttribute('contenteditable') === 'true';
+      setEditable(rightBody, editRightBtn, !on);
+    });
+
+    autoSave(leftBody,  LS_LEFT_HTML);
+
+    // Copy right panel as plain text
+    copyBtn.addEventListener('click', async () => {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = rightBody.innerHTML.replaceAll(/<[^>]+>/g,'');
+      const text = tmp.textContent;
+      await navigator.clipboard.writeText(text);
+      copyBtn.textContent = 'Copied ✓';
+      setTimeout(()=>copyBtn.textContent='Copy AI Article',1400);
+    });
+
+    // Accept → next page
+    acceptBtn.addEventListener('click', () => {
+      window.location.href = 'accept.html';
+    });
+  </script>
+</body>
+</html>

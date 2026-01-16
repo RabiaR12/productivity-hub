@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SIM Ticketing — AI (Processing)</title>
+
+  <style>
+    :root{
+      --bg:#f3f4f6;
+      --surface:#ffffff;
+      --ink:#0f172a;
+      --muted:#6b7280;
+      --border:#e5e7eb;
+      --brand:#6f5bd3;
+      --brand-2:#5b49c2;
+      --ok:#10b981;
+      --warn:#f59e0b;
+      --radius:14px;
+      --shadow:0 8px 24px rgba(15,23,42,.08);
+    }
+
+    *{ box-sizing:border-box }
+    body{
+      margin:0; background:var(--bg); color:var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial;
+    }
+
+    /* ===== Header (kept as-is) ===== */
+    .main-header{ border-bottom:1px solid #ddd; background:#fff; }
+    .main-header img{ width:100%; height:60px; object-fit:cover; display:block; }
+
+    /* ===== Page layout ===== */
+    .page{ max-width:1200px; margin:0 auto; padding:20px 16px 80px; }
+    .title-row{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      margin:10px 0 18px;
+    }
+    h1{ margin:0; font-size:22px; }
+    .sub{ color:var(--muted); font-size:13px; }
+
+    /* Center wrapper */
+    .center{
+      display:flex; justify-content:center; align-items:flex-start;
+      padding-top:4px;
+    }
+
+    .card{
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius); box-shadow:var(--shadow);
+      overflow:hidden; width:100%; max-width:760px;
+    }
+    .card header{
+      padding:12px 16px; border-bottom:1px solid var(--border);
+      background:#f8fafc; font-weight:600;
+    }
+    .card .body{ padding:16px; }
+
+    /* ===== Process card ===== */
+    .status-line{
+      font-size:14px; color:#111827; display:flex; align-items:center; gap:8px;
+      margin-bottom:12px;
+    }
+    .pulse{
+      width:10px; height:10px; border-radius:999px; background:var(--warn); position:relative;
+      box-shadow:0 0 0 0 rgba(245,158,11,.7); animation:pulse 1.8s infinite;
+    }
+    @keyframes pulse{
+      0%{ box-shadow:0 0 0 0 rgba(245,158,11,.7) }
+      70%{ box-shadow:0 0 0 10px rgba(245,158,11,0) }
+      100%{ box-shadow:0 0 0 0 rgba(245,158,11,0) }
+    }
+
+    .progress{
+      height:10px; background:#eef2ff; border-radius:999px; overflow:hidden;
+      border:1px solid var(--border); margin-bottom:14px;
+    }
+    .bar{
+      height:100%; width:0%; background:linear-gradient(90deg,var(--brand),var(--brand-2));
+      transition:width .4s ease;
+    }
+
+    .steps{ display:grid; gap:10px; }
+    .step{
+      display:grid; grid-template-columns: 28px 1fr auto; align-items:center; gap:12px;
+      padding:10px 12px; border:1px solid var(--border); border-radius:12px; background:#fff;
+    }
+    .step .ico{ font-size:18px; width:28px; text-align:center }
+    .step .name{ font-weight:600; }
+    .step .desc{ color:var(--muted); font-size:13px; margin-top:2px }
+    .step .right{ font-size:12px; color:var(--muted) }
+
+    .step.active{ border-color:#c7d2fe; box-shadow:0 0 0 3px rgba(199,210,254,.35) inset }
+    .step.done{ border-color:#bbf7d0; background:#f0fdf4 }
+    .step.done .right{ color:var(--ok); font-weight:700 }
+
+    .footer-actions{
+      display:flex; justify-content:flex-end; gap:10px; padding:12px 16px; border-top:1px solid var(--border);
+      background:#fff; border-bottom-left-radius:var(--radius); border-bottom-right-radius:var(--radius);
+    }
+    .btn{
+      padding:10px 16px; border-radius:10px; border:1px solid var(--border); background:#fff;
+      cursor:pointer; font-size:14px;
+    }
+    .btn:disabled{ opacity:.5; cursor:not-allowed }
+    .btn-primary{
+      color:#fff; border:none; background:linear-gradient(180deg,var(--brand),var(--brand-2));
+      box-shadow:0 6px 16px rgba(111,91,211,.25);
+    }
+    .btn-ghost{ background:#fff }
+  </style>
+</head>
+
+<body>
+  <!-- ====== Header (unchanged) ====== -->
+  <header class="main-header">
+    <img src="header.png" alt="Header Image">
+  </header>
+
+  <!-- ====== Body ====== -->
+  <main class="page">
+    <div class="title-row">
+      <div>
+        <h1>AI Knowledge Article — Processing </h1>
+        <div class="sub">This may take a moment. You can leave this tab open.</div>
+      </div>
+    </div>
+
+    <!-- CENTERED PROCESSING ONLY -->
+    <section class="center">
+      <article class="card">
+        <header>Processing</header>
+        <div class="body">
+          <div class="status-line">
+            <span class="pulse" aria-hidden="true"></span>
+            <span id="liveStatus">Starting…</span>
+          </div>
+
+          <div class="progress" aria-label="Progress">
+            <div class="bar" id="bar"></div>
+          </div>
+
+          <div class="steps" id="steps">
+            <div class="step" data-key="analyze">
+              <div class="ico">🧠</div>
+              <div>
+                <div class="name">OCR Processing…</div>
+                <div class="desc">Textract extracts content from SIM tickets</div>
+              </div>
+              <div class="right" data-right>Queued</div>
+            </div>
+
+            <div class="step" data-key="rag">
+              <div class="ico">🔍</div>
+              <div>
+                <div class="name">KB Search…</div>
+                <div class="desc">Kendra searches for relevant KB articles</div>
+              </div>
+              <div class="right" data-right>Queued</div>
+            </div>
+
+            <div class="step" data-key="llm">
+              <div class="ico">📝</div>
+              <div>
+                <div class="name">Article Retrieval…</div>
+                <div class="desc">Matching knowledge base articles found</div>
+              </div>
+              <div class="right" data-right>Queued</div>
+            </div>
+
+            <div class="step" data-key="structure">
+              <div class="ico">🤖</div>
+              <div>
+                <div class="name">AI Analysis…</div>
+                <div class="desc">Bedrock AI Agent analyzes SIM vs KB Content</div>
+              </div>
+              <div class="right" data-right>Queued</div>
+            </div>
+
+            <div class="step" data-key="finalize">
+              <div class="ico">✨</div>
+              <div>
+                <div class="name">Finalizing knowledge article…</div>
+              </div>
+              <div class="right" data-right>Queued</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-actions">
+          <a class="btn btn-ghost" href="cat.html">Cancel</a>
+          <button id="continueBtn" class="btn btn-primary" disabled>Continue to Comparison</button>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    // ====== Configuration ======
+    const NEXT_URL = 'comparison.html'; // change if your comparison page has a different filename
+
+    // ====== Step engine ======
+    const stepsOrder = ['analyze','rag','llm','structure','finalize'];
+    const liveStrings = {
+      analyze:   'Analyzing uploaded help desk tickets…',
+      rag:       'Processing with RAG technology…',
+      llm:       'LLM generating knowledge base…',
+      structure: 'Structuring article content…',
+      finalize:  'Finalizing knowledge article…'
+    };
+
+    const bar = document.getElementById('bar');
+    const live = document.getElementById('liveStatus');
+    const continueBtn = document.getElementById('continueBtn');
+
+    const stepEls = stepsOrder.map(key => document.querySelector(`.step[data-key="${key}"]`));
+
+    function setActive(el){
+      stepEls.forEach(s => s.classList.remove('active'));
+      el.classList.add('active');
+    }
+    function markDone(el){
+      el.classList.remove('active');
+      el.classList.add('done');
+      const right = el.querySelector('[data-right]');
+      if(right) right.textContent = 'Done ✓';
+    }
+
+    async function wait(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+    async function runPipeline(){
+      const total = stepsOrder.length;
+      for(let i=0;i<total;i++){
+        const key = stepsOrder[i];
+        const el  = stepEls[i];
+        setActive(el);
+        live.textContent = liveStrings[key];
+        el.querySelector('[data-right]').textContent = 'Running…';
+
+        // Simulated durations (tweak as desired)
+        const durations = [1400, 1600, 2200, 1500, 1200];
+        await wait(durations[i]);
+
+        markDone(el);
+        const pct = Math.round(((i+1)/total)*100);
+        bar.style.width = pct + '%';
+      }
+      live.textContent = 'All steps complete. Ready!';
+      continueBtn.disabled = false;
+    }
+
+    continueBtn.addEventListener('click', () => {
+      window.location.href = NEXT_URL;
+    });
+
+    // Kick off
+    runPipeline();
+  </script>
+</body>
+</html>
